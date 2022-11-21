@@ -77,6 +77,14 @@
 #include <sys/ioctl.h>
 #include <sys/file.h>
 
+#define CALCULATE_OVERHEAD 1
+#ifdef CALCULATE_OVERHEAD
+  typedef unsigned long long timestamp_t;
+  timestamp_t get_timestamp ();
+#endif
+
+
+
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || \
     defined(__NetBSD__) || defined(__DragonFly__)
   #include <sys/sysctl.h>
