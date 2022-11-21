@@ -38,6 +38,14 @@
 extern u64 time_spent_working;
 #endif
 
+#ifdef CALCULATE_OVERHEAD
+  timestamp_t get_timestamp () {
+    struct timeval now;
+    gettimeofday (&now, NULL);
+    return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
+  }
+#endif
+
 static void at_exit() {
 
   int   i;
@@ -1320,9 +1328,25 @@ int main(int argc, char **argv_orig, char **envp) {
   // (void)nice(-20);  // does not improve the speed
   // real start time, we reset, so this works correctly with -V
   afl->start_time = get_cur_time();
+   
+#ifdef CALCULATE_OVERHEAD
+    double T0 = get_timestamp();
+    double overhead = 0.0;
 
+    u8 *scheduler_overhead_csv_file_name = alloc_printf("%s/scheduler_overhead.csv", afl->out_dir);
+    s32 fd = open(scheduler_overhead_csv_file_name, O_WRONLY | O_APPEND | O_CREAT, DEFAULT_PERMISSION);
+    if (unlikely(fd < 0)) { PFATAL("Unable to create %s/scheduler_overhead.csv'", afl->out_dir); }
+    timestamp_t t0, t1;
+    u8 *scheduler_overhead;
+;
+#endif
+   
   while (1) {
 
+#ifdef CALCULATE_OVERHEAD
+    t0 = get_timestamp();
+#endif
+     
     u8 skipped_fuzz;
 
     if(afl->use_hier_sched){
@@ -1524,6 +1548,17 @@ int main(int argc, char **argv_orig, char **envp) {
 
       }
     }
+#ifdef CALCULATE_OVERHEAD
+    t1 = get_timestamp();
+    overhead += (t1 - t0) / 1000000.0;
+    OKF("Seed scehduler overhead is: %.4g, %.4g", overhead / ((t1 - T0) / 1000000.0), afl->rl_params->update_overhead_sec );
+     
+
+
+    scheduler_overhead = alloc_printf("%f, %f, %f\n", (double) (t1 - T0) / 1000000.0, (double) overhead, afl->rl_params->update_overhead_sec );
+
+    write((int) (fd), scheduler_overhead, strlen(scheduler_overhead));
+#endif
 
     skipped_fuzz = fuzz_one(afl);
 
@@ -1605,6 +1640,13 @@ stop_fuzzing:
     unlink(path);
 
   }
+   
+  #ifdef CALCULATE_OVERHEAD
+    close(fd);
+    ck_free(scheduler_overhead_csv_file_name);
+    ck_free(scheduler_overhead);
+#endif
+
 
   fclose(afl->fsrv.plot_file);
   destroy_queue(afl);
