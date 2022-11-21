@@ -686,6 +686,10 @@ typedef struct afl_state {
   u32 *n_tree_bits;
   u32 *n_tree_fuzzed_bits;
 
+#ifdef CALCULATE_OVERHEAD
+  double update_overhead_sec;
+#endif
+   
 } afl_state_t;
 
 struct custom_mutator {
