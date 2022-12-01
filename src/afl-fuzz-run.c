@@ -412,8 +412,10 @@ u8 calibrate_case(afl_state_t *afl, struct queue_entry *q, u8 *use_mem,
         if(afl->use_hier_sched){
 #ifdef CALCULATE_OVERHEAD
         timestamp_t t0 = get_timestamp();
+#endif
           update_feature_freq(afl->hier_sched, afl->fsrv.trace_bits);
           do_clustering(afl->hier_sched, q, afl->fsrv.trace_bits);
+#ifdef CALCULATE_OVERHEAD
         timestamp_t t1 = get_timestamp();
         afl->update_overhead_sec += (t1 - t0) / 1000000.0;
 #endif
